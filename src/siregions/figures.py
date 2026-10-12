@@ -93,3 +93,133 @@ def deals_figures(o: Path, metrics: pd.DataFrame, by_h: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(fig_dir / "01_mae.png", dpi=160)
     plt.close(fig)
+
+
+def gap_figures(o: Path, common: pd.DataFrame, rate: pd.Series, wide_gap: pd.DataFrame,
+                pred: pd.DataFrame):
+    """wide_gap — таблица месяц × регион разрыва в основном сегменте."""
+    fig_dir = Path(o) / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Общий разрыв по сегментам и ключевая ставка
+    fig, ax = plt.subplots(figsize=(7.2, 3.3))
+    for i, col in enumerate(common.columns):
+        ax.plot(common.index, common[col] * 100, lw=2 if col == "Вторичный" else 1.4,
+                color=SERIES[i], label=col + " рынок")
+    ax.set_ylabel("разрыв, % от цены сделки", color=MUTED, fontsize=8)
+    ax2 = ax.twinx()
+    ax2.plot(rate.index, rate, color=MUTED, lw=1.0, ls="--", label="ключевая ставка")
+    ax2.set_ylabel("ключевая ставка, %", color=MUTED, fontsize=8)
+    ax2.tick_params(colors=MUTED, labelsize=8)
+    ax2.spines[["top"]].set_visible(False)
+    ax.set_title("Запрос в объявлении сходится с ценой сделки: вторичка потеряла половину разрыва",
+                 loc="left", fontsize=10, color=INK)
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1 + h2, l1 + l2, frameon=False, fontsize=8, loc="upper center", ncol=3)
+    ax.set_ylim(top=float(common.max().max() * 100) * 1.45)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "01_common_gap.png", dpi=160)
+    plt.close(fig)
+
+    # 2. Распределение по регионам: сдвиг вниз без сужения
+    med = wide_gap.median(axis=1) * 100
+    p25, p75 = wide_gap.quantile(0.25, axis=1) * 100, wide_gap.quantile(0.75, axis=1) * 100
+    neg = (wide_gap < 0).mean(axis=1) * 100
+    fig, ax = plt.subplots(figsize=(7.2, 3.3))
+    ax.fill_between(med.index, p25, p75, color=SERIES[0], alpha=0.15, lw=0, label="25–75 % регионов")
+    ax.plot(med.index, med, color=SERIES[0], lw=2, label="медианный регион")
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.set_ylabel("разрыв, % от цены сделки", color=MUTED, fontsize=8)
+    ax2 = ax.twinx()
+    ax2.plot(neg.index, neg, color=SERIES[2], lw=1.2, ls=":", label="регионов с отрицательным разрывом")
+    ax2.set_ylabel("доля регионов, %", color=MUTED, fontsize=8)
+    ax2.tick_params(colors=MUTED, labelsize=8)
+    ax2.spines[["top"]].set_visible(False)
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1 + h2, l1 + l2, frameon=False, fontsize=8, loc="lower left", ncol=2)
+    ax.set_title("Распределение сдвинулось вниз, но не сжалось: межквартильный размах тот же",
+                 loc="left", fontsize=10, color=INK)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "02_regions.png", dpi=160)
+    plt.close(fig)
+
+    # 3. Прогнозная регрессия против плацебо
+    fig, ax = plt.subplots(figsize=(6.8, 3.0))
+    specs = [s for s in ["лаг", "плацебо"] if s in set(pred["spec"])]
+    hs = sorted(pred["h"].unique())
+    for j, spec in enumerate(specs):
+        sub = pred[pred["spec"] == spec].set_index("h").loc[hs]
+        x = np.arange(len(hs)) + (j - 0.5) * 0.18
+        ax.errorbar(x, sub["coef"], yerr=[sub["coef"] - sub["ci_low"], sub["ci_high"] - sub["coef"]],
+                    fmt="o", color=SERIES[j], ecolor=MUTED, elinewidth=1, capsize=3,
+                    label="разрыв месяцем раньше → будущий прирост" if spec == "лаг"
+                          else "тот же разрыв → ПРОШЛЫЙ прирост (плацебо)")
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.set_xticks(np.arange(len(hs)), [f"h = {h}" for h in hs], fontsize=9)
+    ax.set_ylabel("коэффициент разрыва", color=MUTED, fontsize=8)
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.set_title("Плацебо того же порядка: разрыв во многом ловит возврат цены сделки",
+                 loc="left", fontsize=10, color=INK)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "03_predictive.png", dpi=160)
+    plt.close(fig)
+
+
+def novelty_figures(o: Path, df: pd.DataFrame, wp: pd.DataFrame, comp: pd.DataFrame):
+    fig_dir = Path(o) / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Три этажа рынка: первичка, молодая вторичка, старая вторичка
+    med = df.groupby("m")[["prem", "pri_new", "pri_old"]].median() * 100
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    ax.plot(med.index, med["pri_old"], color=SERIES[0], lw=2, label="первичка против жилья старше 5 лет")
+    ax.plot(med.index, med["prem"], color=SERIES[1], lw=1.6, label="молодая вторичка против старой")
+    ax.plot(med.index, med["pri_new"], color=SERIES[2], lw=1.6, label="первичка против молодой вторички")
+    ax.axhline(0, color=MUTED, lw=0.6)
+    ax.set_ylabel("превышение цены, %", color=MUTED, fontsize=8)
+    ax.set_title("Разрыв первички и вторички — это почти целиком возраст жилья",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "01_premium.png", dpi=160)
+    plt.close(fig)
+
+    # 2. Сдвиг состава сделок
+    w = wp.groupby("m")["w"].median() * 100
+    q1 = wp.groupby("m")["w"].quantile(0.25) * 100
+    q3 = wp.groupby("m")["w"].quantile(0.75) * 100
+    fig, ax = plt.subplots(figsize=(7.2, 3.0))
+    ax.fill_between(w.index, q1, q3, color=SERIES[0], alpha=0.15, lw=0, label="25–75 % регионов")
+    ax.plot(w.index, w, color=SERIES[0], lw=2, label="медианный регион")
+    ax.set_ylabel("доля жилья младше 5 лет в сделках, %", color=MUTED, fontsize=8)
+    ax.set_title("Состав сделок молодеет: уровень задан предположением, наклон — нет",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "02_weight.png", dpi=160)
+    plt.close(fig)
+
+    # 3. Чем измеряем цену сделки — то и получаем про разрыв
+    c = comp[comp["мера"] != "сдвиг состава"]
+    fig, ax = plt.subplots(figsize=(6.8, 2.8))
+    y = np.arange(len(c))
+    ax.errorbar(c["тренд_пп_в_год"], y,
+                xerr=[c["тренд_пп_в_год"] - c["ди_низ"], c["ди_верх"] - c["тренд_пп_в_год"]],
+                fmt="o", color=SERIES[0], ecolor=MUTED, elinewidth=1, capsize=3)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.set_yticks(y, c["мера"], fontsize=8)
+    ax.invert_yaxis()
+    ax.set_xlabel("тренд разрыва, п. п. в год", color=MUTED, fontsize=8)
+    ax.set_title("Схождение запроса и сделки держится на составе сделок",
+                 loc="left", fontsize=10, color=INK)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "03_gap_composition.png", dpi=160)
+    plt.close(fig)

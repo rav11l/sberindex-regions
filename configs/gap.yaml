@@ -1,0 +1,23 @@
+# Разрыв «объявление минус сделка»: цены Домклик против цен сделок СберИндекса.
+# Запуск: python -m siregions.cli gap --config configs/gap.yaml
+seed: 42
+output_dir: outputs/gap
+start: "2022-01-01"                   # раньше нет цен объявлений
+
+datasets:
+  offers: dinamika-tsen-obyavlenii        # цены объявлений, Домклик
+  deals: real_estate_deals                # цены сделок, СберИндекс, 2017–2026
+  deals_alt: residential_real_estate_prices  # второй набор цен сделок, для сверки
+  supply: predlozheniya-nedvizhimosti     # число объявлений
+  rate: real-key-interest-rate            # ключевая ставка, номинальная и реальная
+
+gap:
+  segment: Вторичный                  # основной сегмент: только там есть торг
+  rate_col: rate                      # rate — номинальная, rate_real — в реальном выражении
+  lags: 3                             # лаги в тесте на опережение
+  horizons: [3, 6, 12]                # горизонты прогнозной регрессии
+  oos_horizons: [6, 12]
+  oos_min_train: 24
+  n_boot: 2000
+  trim_q: 0.01                        # отсечение крайних наблюдений в проверке устойчивости
+  figures: true

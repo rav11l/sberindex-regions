@@ -1,0 +1,20 @@
+# Вклад новизны в рост цен: цены вторички по возрасту жилья против первичного рынка.
+# Запуск: python -m siregions.cli novelty --config configs/novelty.yaml
+seed: 42
+output_dir: outputs/novelty
+
+datasets:
+  prices: residential_real_estate_prices   # «Цены на жилую недвижимость», с разбивкой по новизне
+  offers: dinamika-tsen-obyavlenii         # для пересчёта разрыва из третьего исследования
+  deals: real_estate_deals
+  deals_alt: residential_real_estate_prices
+  supply: predlozheniya-nedvizhimosti
+  rate: real-key-interest-rate
+start: "2022-01-01"
+
+novelty:
+  base_months: 3                      # сколько месяцев усредняется в базе и в конце
+  last_months: 3
+  w0: 0.30                            # вес молодого жилья в базе; уровень не опознаётся
+  w0_sensitivity: [0.15, 0.30, 0.45]  # поэтому разложение считается на трёх значениях
+  figures: true

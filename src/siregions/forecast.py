@@ -21,6 +21,10 @@ log = logging.getLogger(__name__)
 def build_panel(cfg) -> pd.DataFrame:
     long = data_mod.read(cfg["dataset"])
     f = cfg["forecast"]
+    # в выгрузках СберИндекса «Россия» лежит в том же измерении, что и регионы: это агрегат,
+    # и в панели регионов ему не место ни в общем факторе, ни в средней ошибке
+    excl = f.get("exclude_areas", ["Россия"])
+    long = long[~long["ref_area"].isin(excl)]
     wide = long.pivot_table(index=["ref_area", f["segment_col"]], columns="period", values="value")
     wide.index = [f"{a}|{b}" for a, b in wide.index]
     # даты в выгрузке стоят на конец месяца; приводим к первому числу, иначе прошлый год
