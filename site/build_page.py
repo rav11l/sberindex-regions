@@ -18,7 +18,7 @@ import charts as ch
 HERE = pathlib.Path(__file__).parent
 OUT = HERE / "sberindex-regions_T123.html"
 GITHUB = "https://github.com/rav11l/sberindex-regions"
-DOI = None          # проставляется после депозита на Zenodo
+DOI = "10.5281/zenodo.23318082"   # концептуальный DOI: всегда ведёт на последнюю версию
 
 
 def two(tag: str, ru: str, en: str, cls: str = "") -> str:
@@ -107,6 +107,8 @@ HEAD = f'''<div class="wrap">
       <span data-en>Data: <b>SberIndex</b>, Domclick, Bank of Russia</span>
       <span data-ru>Код: <a href="{GITHUB}">GitHub</a> · MIT</span>
       <span data-en>Code: <a href="{GITHUB}">GitHub</a> · MIT</span>
+      <span data-ru>Депозит: <a href="https://doi.org/{DOI}">DOI {DOI}</a></span>
+      <span data-en>Deposit: <a href="https://doi.org/{DOI}">DOI {DOI}</a></span>
     </div>
   </div>'''
 

@@ -4,6 +4,14 @@ title: "Региональные панели СберИндекса: пять �
 version: 0.1.0
 date-released: "2026-10-12"
 license: MIT
+doi: "10.5281/zenodo.23318082"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23318082"
+    description: "DOI всех версий, всегда ведёт на последнюю"
+  - type: doi
+    value: "10.5281/zenodo.23318083"
+    description: "DOI версии v0.1.0"
 repository-code: "https://github.com/rav11l/sberindex-regions"
 url: "https://digitaleconomylab.ru/sberindex-regions"
 authors:
