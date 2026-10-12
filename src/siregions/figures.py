@@ -223,3 +223,82 @@ def novelty_figures(o: Path, df: pd.DataFrame, wp: pd.DataFrame, comp: pd.DataFr
     fig.tight_layout()
     fig.savefig(fig_dir / "03_gap_composition.png", dpi=160)
     plt.close(fig)
+
+
+def rate_figures(o: Path, irf: pd.DataFrame, rob: pd.DataFrame, win: pd.DataFrame):
+    fig_dir = Path(o) / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    short = {"15 - 24 лет": "15–24", "25 - 34 лет": "25–34", "35 - 64 лет": "35–64", "65+ лет": "65+"}
+
+    # 1. Отклик по возрастам на плановые повышения, относительная мера
+    sub = irf[(irf["мера"] == "relative") & (irf["вариант"] == "плановые повышения")]
+    fig, ax = plt.subplots(figsize=(7.2, 3.3))
+    for i, (g, s) in enumerate(sub.groupby("группа")):
+        s = s.sort_values("h")
+        ax.plot(s["h"], s["coef"], lw=2 if g.startswith(("15", "65")) else 1.2,
+                color=SERIES[i], label=short.get(g, g))
+        if g.startswith("15"):
+            ax.fill_between(s["h"], s["ci_low"], s["ci_high"], color=SERIES[i], alpha=0.12, lw=0)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    # за пределами двух недель плацебо-сдвиги дают такие же «значимые» оценки,
+    # поэтому зона отмечена явно
+    ax.axvspan(2.5, float(sub["h"].max()), color=MUTED, alpha=0.10, lw=0)
+    ax.text(2.7, ax.get_ylim()[1] * 0.92, "дальше плацебо срабатывает так же",
+            fontsize=7.5, color=MUTED)
+    ax.set_xlabel("недель после решения", color=MUTED, fontsize=8)
+    ax.set_ylabel("% на п. п. повышения, к средней активности", color=MUTED, fontsize=8)
+    ax.set_title("Разница видна в неделю решения: 15–24 уходят вниз, остальные стоят",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8, ncol=4)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "01_irf_hikes.png", dpi=160)
+    plt.close(fig)
+
+    # 2. Повышения против снижений, неделя решения
+    fig, ax = plt.subplots(figsize=(6.8, 3.0))
+    groups = sorted(irf["группа"].unique())
+    x = np.arange(len(groups))
+    for j, v in enumerate(["плановые повышения", "плановые снижения"]):
+        s = irf[(irf["мера"] == "relative") & (irf["вариант"] == v) & (irf["h"] == 0)]
+        s = s.set_index("группа").loc[groups]
+        # приглушаем столбцы, где оценка не отличается от нуля: иначе картинка утверждает
+        # больше, чем выдерживают проверки
+        solid = (s["coef"].abs() > 2 * s["se"]).to_numpy()
+        ax.bar(x + (j - 0.5) * 0.36, s["coef"], width=0.34, color=SERIES[j],
+               alpha=1.0, label="повышения" if j == 0 else "снижения")
+        for xi, val, ok in zip(x + (j - 0.5) * 0.36, s["coef"], solid):
+            if not ok:
+                ax.bar([xi], [val], width=0.34, color="white", alpha=0.6)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.set_xticks(x, [short.get(g, g) for g in groups], fontsize=9)
+    ax.set_ylabel("% на п. п., неделя решения", color=MUTED, fontsize=8)
+    ax.set_title("На снижение ставки не реагирует никто; бледным — оценки, неотличимые от нуля",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "02_hikes_vs_cuts.png", dpi=160)
+    plt.close(fig)
+
+    # 3. Проверка устойчивости: коэффициент в неделю решения по вариантам
+    s = rob[(rob["h"] == 0)]
+    order = [v for v in ["все решения", "плановые", "плановые повышения", "плановые снижения",
+                         "плановые, без 2022"] if v in set(s["вариант"])]
+    order += [v for v in s["вариант"].unique() if v.startswith("плацебо")]
+    fig, ax = plt.subplots(figsize=(7.4, 3.4))
+    width = 0.2
+    for i, g in enumerate(sorted(s["группа"].unique())):
+        sub = s[s["группа"] == g].set_index("вариант").reindex(order)
+        ax.bar(np.arange(len(order)) + (i - 1.5) * width, sub["коэф"], width=width,
+               color=SERIES[i], label=short.get(g, g))
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.set_xticks(np.arange(len(order)), order, fontsize=7.5, rotation=12)
+    ax.set_ylabel("% на п. п., неделя решения", color=MUTED, fontsize=8)
+    ax.set_title("Что остаётся от результата при смене набора событий и на плацебо",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8, ncol=4)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "03_robustness.png", dpi=160)
+    plt.close(fig)

@@ -92,3 +92,23 @@ def test_deals_metrics_match_doc():
     assert m["prophet_relative"] == 3830
     s = json.loads((OUT / "deals" / "summary.json").read_text(encoding="utf-8"))
     assert s["n_series"] == 155 and s["pairs"] == 10230
+
+
+def test_rate_column_numbers_match_run():
+    s = _load("rate")
+    assert s["decisions"]["с изменением"] == 33
+    assert s["decisions"]["плановых повышений"] == 15 and s["decisions"]["плановых снижений"] == 15
+    rob = pd.DataFrame(s["robustness"])
+    young = rob[(rob["группа"] == "15 - 24 лет") & (rob["h"] == 0)].set_index("вариант")
+    assert round(young.loc["плановые повышения", "коэф"], 2) == -1.31
+    assert young.loc["плановые повышения", "p_perm"] < 0.06
+    assert young.loc["плановые, без 2022", "p_perm"] < 0.05
+    # на снижениях ничего ни у кого
+    cuts = rob[(rob["вариант"] == "плановые снижения") & (rob["h"] == 0)]
+    assert (cuts["p_perm"] > 0.15).all()
+    # плацебо в неделю фиктивного решения молчит
+    pl = rob[rob["вариант"].str.startswith("плацебо") & (rob["h"] == 0)]
+    assert (pl["p_nw"] > 0.05).all()
+    # оценка по 65+ не переживает исключения по одному событию — в выводы не идёт
+    jk = s["jackknife"]["65+ лет | плановые повышения"]
+    assert jk["p_max"] > 0.2

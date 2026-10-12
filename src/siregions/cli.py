@@ -3,6 +3,7 @@
 Команды:
   covid     проверка детекторов на ковидном шоке: общий, идиосинкратический, эхо
   forecast  скользящий бэктест прогнозных моделей на длинной региональной панели
+  rate      кто первым реагирует на решения ЦБ по ставке: недельные траты по возрастам
   novelty   премия за новизну жилья, состав сделок и его вклад в рост цен
   gap       разрыв «объявление минус сделка»: уровень, динамика, опережение, прогнозная ценность
 """
@@ -284,9 +285,68 @@ def cmd_novelty(cfg, args):
     return summary
 
 
+def cmd_rate(cfg, args):
+    from . import rate as rate_mod
+
+    c = cfg["rate"]
+    status = data_mod.verify()
+    if any(v != "ok" for v in status.values()):
+        log.warning("хеши выгрузок: %s", {k: v for k, v in status.items() if v != "ok"})
+    b = rate_mod.build(cfg)
+    o = out_dir(cfg)
+    groups = c["groups"]
+
+    irf = pd.concat([rate_mod.irf_table(b, groups, mode, v, c["hmax"], c["lags"])
+                     for mode in ["relative", "absolute"]
+                     for v in ["все решения", "плановые повышения", "плановые снижения"]],
+                    ignore_index=True)
+    irf.to_csv(o / "irf.csv", index=False)
+    rob = rate_mod.robustness(b, groups, c["horizons"], "relative", c["n_perm"], c["lags"],
+                              cfg.get("seed", 0), c["placebo_shifts"])
+    rob.to_csv(o / "robustness.csv", index=False)
+    win = rate_mod.event_window(b, groups)
+    win.to_csv(o / "event_window.csv", index=False)
+    jk = pd.concat([rate_mod.jackknife(b, g, v).assign(группа=g, вариант=v)
+                    for g in [groups[0], groups[-1]]
+                    for v in ["плановые повышения", "плановые, без 2022"]], ignore_index=True)
+    jk.to_csv(o / "jackknife.csv", index=False)
+
+    dec = b["decisions"]
+    summary = {
+        "weeks": [str(b["weeks"].min().date()), str(b["weeks"].max().date())],
+        "n_weeks": int(len(b["weeks"])),
+        "decisions": {"всего": int(len(dec)), "с изменением": int((dec["change"] != 0).sum()),
+                      "плановых повышений": int(((dec["change"] > 0) & (dec["kind"] == "плановое")).sum()),
+                      "плановых снижений": int(((dec["change"] < 0) & (dec["kind"] == "плановое")).sum()),
+                      "экстренных": int((dec["kind"] == "экстренное").sum())},
+        "irf_relative_h0": irf[(irf["мера"] == "relative") & (irf["h"] == 0)]
+                           .round(4).to_dict("records"),
+        "robustness": rob.round(4).to_dict("records"),
+        "jackknife": {f"{g} | {v}": {"min": float(s["коэф"].min()), "max": float(s["коэф"].max()),
+                                      "p_max": float(s["p"].max())}
+                      for (g, v), s in jk.groupby(["группа", "вариант"])},
+    }
+    (o / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=str),
+                                    encoding="utf-8")
+    print(json.dumps(summary["decisions"], ensure_ascii=False))
+    for mode in ["relative", "absolute"]:
+        for v in ["все решения", "плановые повышения", "плановые снижения"]:
+            sub = irf[(irf["мера"] == mode) & (irf["вариант"] == v)]
+            print(f"\n--- {mode}, {v}")
+            print(sub.pivot_table(index="группа", columns="h", values="coef").round(2).to_string())
+    print("\n--- исключение по одному событию")
+    print(jk.groupby(["группа", "вариант"])["коэф"].agg(["min", "max"]).round(2).to_string())
+    print("\n--- устойчивость (отклонение от средней активности)")
+    print(rob.round(3).to_string(index=False))
+    if c.get("figures", True):
+        from . import figures
+        figures.rate_figures(o, irf, rob, win)
+    return summary
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="siregions")
-    ap.add_argument("command", choices=["covid", "forecast", "gap", "novelty"])
+    ap.add_argument("command", choices=["covid", "forecast", "gap", "novelty", "rate"])
     ap.add_argument("--config", default="configs/covid.yaml")
     ap.add_argument("--set", nargs="*", default=[])
     args = ap.parse_args(argv)
@@ -299,6 +359,8 @@ def main(argv=None):
         cmd_gap(cfg, args)
     elif args.command == "novelty":
         cmd_novelty(cfg, args)
+    elif args.command == "rate":
+        cmd_rate(cfg, args)
     else:
         from .forecast import cmd_forecast
         cmd_forecast(cfg, args)

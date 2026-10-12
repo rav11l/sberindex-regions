@@ -150,3 +150,47 @@ def test_identity_check_flags_offset_data():
     ident = novelty.identity_check(df)
     assert 0.0 <= ident["share_all_between"] <= 1.0
     assert ident["share_new_above_old"] == pytest.approx(1.0)
+
+
+def test_rate_align_puts_decision_in_its_own_week():
+    from siregions import rate as rate_mod
+
+    weeks = pd.date_range("2024-01-07", periods=10, freq="W-SUN")
+    dec = pd.DataFrame({"decision_date": [pd.Timestamp("2024-01-12")],
+                        "effective_date": [pd.Timestamp("2024-01-15")],
+                        "rate": [16.0], "change": [1.0], "kind": ["плановое"]})
+    ev = rate_mod.align(dec, weeks)
+    # решение в пятницу 12.01 попадает в неделю, кончающуюся в воскресенье 14.01
+    assert ev.loc[pd.Timestamp("2024-01-14")] == 1.0
+    assert ev.drop(pd.Timestamp("2024-01-14")).abs().sum() == 0
+
+
+def test_rate_local_projection_recovers_planted_response():
+    """В ряд с заложенной реакцией −1 % на п. п. в неделю решения проекция должна попасть."""
+    from siregions import rate as rate_mod
+
+    rng = np.random.default_rng(5)
+    weeks = pd.date_range("2022-01-02", periods=200, freq="W-SUN")
+    dates = weeks[[20, 50, 80, 110, 140, 170]]
+    dec = pd.DataFrame({"decision_date": dates - pd.Timedelta(days=2),
+                        "effective_date": dates, "rate": np.arange(6) + 8.0,
+                        "change": [1.0, 2.0, 1.0, -1.0, 2.0, 1.0], "kind": "плановое"})
+    ev = rate_mod.align(dec, weeks)
+    y = pd.Series(np.cumsum(rng.normal(0, 0.005, 200)), index=weeks) - 0.01 * ev
+    t = rate_mod.local_projection(y, ev, rate_mod.controls(weeks), hmax=1, lags=2)
+    assert abs(t.loc[0, "coef"] - (-1.0)) < 0.35
+
+
+def test_rate_permutation_p_is_high_for_noise():
+    from siregions import rate as rate_mod
+
+    rng = np.random.default_rng(9)
+    weeks = pd.date_range("2022-01-02", periods=150, freq="W-SUN")
+    dates = weeks[[20, 50, 80, 110]]
+    dec = pd.DataFrame({"decision_date": dates - pd.Timedelta(days=2), "effective_date": dates,
+                        "rate": [8.0, 9.0, 10.0, 11.0], "change": [1.0, 1.0, -1.0, 1.0],
+                        "kind": "плановое"})
+    ev = rate_mod.align(dec, weeks)
+    y = pd.Series(np.cumsum(rng.normal(0, 0.01, 150)), index=weeks)   # реакции нет
+    out = rate_mod.permutation_p(y, ev, rate_mod.controls(weeks), h=0, n_perm=100, seed=1)
+    assert out["p_perm"] > 0.1

@@ -1,0 +1,18 @@
+# Кто первым реагирует на ставку: недельные траты по возрастам вокруг решений ЦБ.
+# Запуск: python -m siregions.cli rate --config configs/rate.yaml
+seed: 42
+output_dir: outputs/rate
+start: "2021-01-01"
+events: data/events/cbr_decisions.csv
+
+datasets:
+  activity: potrebitelskaya-aktivnost-po-kategoriyam-tovarov-v-razreze-vozrastov
+
+rate:
+  groups: ["15 - 24 лет", "25 - 34 лет", "35 - 64 лет", "65+ лет"]
+  hmax: 8                             # дальше горизонта двух месяцев плацебо начинает срабатывать
+  lags: 2
+  horizons: [0, 1, 2]                 # горизонты для сводки устойчивости
+  n_perm: 500
+  placebo_shifts: [-6, 4]
+  figures: true
