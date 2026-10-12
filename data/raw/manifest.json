@@ -1,0 +1,56 @@
+{
+ "si_dinamika-tsen-obyavlenii.csv.zip": {
+  "sha256": "15860844ee4971c0d7a317c7fea3c1ac80430b3528c76d910c926d0557c32d01",
+  "bytes": 176589,
+  "inner": "dinamika-tsen-obyavlenii_ru_1791455525517.csv",
+  "lines": 13304
+ },
+ "si_izmenenie-kolichestva-aktivnikh-torgovo-servisnikh-tochek-po-kategoriyam.csv.zip": {
+  "sha256": "51a6cdb492be181a830c31a62dc543ce98ceece9ce7ae7d817d467ddc5fa6092",
+  "bytes": 46397,
+  "inner": "izmenenie-kolichestva-aktivnikh-torgovo-servisnikh-tochek-po-kategoriyam_ru_1791276476593.csv",
+  "lines": 7697
+ },
+ "si_kolichestvo-vnutrennikh-turistov.csv.zip": {
+  "sha256": "95066bbd91d6408e246f9594b475cc71a43fa5d5b6778669e73702cd14a07893",
+  "bytes": 17998,
+  "inner": "kolichestvo-vnutrennikh-turistov_ru_1764063605572.csv",
+  "lines": 3321
+ },
+ "si_nedelnaa-inflazia-v-razreze-analiticeskih-komponentov.csv.zip": {
+  "sha256": "636573a1af75a3e440f979dd720c0816a8ffbb5769e229af74b94aabd86e13ee",
+  "bytes": 30407,
+  "inner": "nedelnaa-inflazia-v-razreze-analiticeskih-komponentov_ru_1791391179951.csv",
+  "lines": 5373
+ },
+ "si_potrebitelskaya-aktivnost-po-kategoriyam-tovarov-v-razreze-vozrastov.csv.zip": {
+  "sha256": "15448644f1d7d2467f37011ab33ab5233f373ca5836cb39b7e128a13ca1004fc",
+  "bytes": 17397,
+  "inner": "potrebitelskaya-aktivnost-po-kategoriyam-tovarov-v-razreze-vozrastov_ru_1791533007303.csv",
+  "lines": 1501
+ },
+ "si_predlozheniya-nedvizhimosti.csv.zip": {
+  "sha256": "6e622b1a446c4b2278382decc1664c50b9d8b69997b736e7662261bd0d9be246",
+  "bytes": 88648,
+  "inner": "predlozheniya-nedvizhimosti_ru_1791455468559.csv",
+  "lines": 13304
+ },
+ "si_real-key-interest-rate.csv.zip": {
+  "sha256": "e13138f1794e99ede44cebbb1028256854da620397110ffa462ee54c9eb5c0ca",
+  "bytes": 3258,
+  "inner": "real-key-interest-rate_ru_1789628930646.csv",
+  "lines": 472
+ },
+ "si_real_estate_deals.csv.zip": {
+  "sha256": "329403eee39c8392122810c5f106aaa3fdbd185bca03771d8ce5fa6005aa46c4",
+  "bytes": 134195,
+  "inner": "real_estate_deals_ru_1791455795326.csv",
+  "lines": 18848
+ },
+ "si_residential_real_estate_prices.csv.zip": {
+  "sha256": "893d721ab1d049bcca673564b9d1ae7a21ab846a6849c897c262c3608262da88",
+  "bytes": 112311,
+  "inner": "residential_real_estate_prices_ru_1791455745474.csv",
+  "lines": 14478
+ }
+}

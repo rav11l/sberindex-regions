@@ -1,0 +1,5 @@
+data/raw/*.zip
+outputs/
+.venv/
+__pycache__/
+*.pyc

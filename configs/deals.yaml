@@ -1,0 +1,31 @@
+# Длинная панель: цены фактических сделок с жильём, 86 регионов × 2 сегмента, 01.2017–09.2026.
+# Запуск: python -m siregions.cli forecast --config configs/deals.yaml
+seed: 42
+output_dir: outputs/deals
+dataset: real_estate_deals
+
+forecast:
+  segment_col: realty                  # первичный и вторичный рынок — отдельные ряды
+  start: "2017-01-01"
+  horizons: [1, 2, 3]
+  origins: ["2021-01-01","2021-04-01","2021-07-01","2021-10-01",
+            "2022-01-01","2022-04-01","2022-07-01","2022-10-01",
+            "2023-01-01","2023-04-01","2023-07-01","2023-10-01",
+            "2024-01-01","2024-04-01","2024-07-01","2024-10-01",
+            "2025-01-01","2025-04-01","2025-07-01","2025-10-01",
+            "2026-01-01","2026-04-01"]
+  max_series: null
+  models:
+    snaive:           {}
+    snaive_growth:    {window: 3}
+    factor_only:      {}
+    ets_relative:     {}
+    prophet:          {yearly_fourier: 3}
+    prophet_relative: {fn: prophet, yearly_fourier: 3, relative: true}
+    chronos:          {checkpoint: amazon/chronos-bolt-base, mode: relative, enabled: true}
+
+analysis:
+  dm_base: prophet
+  ensembles:
+    - {name: ens_ets_snaive, members: [ets_relative, snaive_growth]}
+    - {name: ens3_mean, members: [ets_relative, snaive_growth, factor_only]}

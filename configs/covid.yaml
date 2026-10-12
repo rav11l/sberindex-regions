@@ -1,0 +1,23 @@
+# Проверка детекторов на ковиде: панель внутреннего туризма СберИндекса.
+# Запуск: python -m siregions.cli covid --config configs/covid.yaml
+seed: 42
+output_dir: outputs/covid
+dataset: kolichestvo-vnutrennikh-turistov
+
+covid:
+  eval_start: "2019-07-01"            # детекторам нужна история до окна оценки
+  shock_month: "2020-04-01"           # нерабочие дни объявлены 25.03.2020, закрытие границ 30.03.2020
+  before_month: "2020-02-01"
+  echo_k: 2.5                         # порог признака эха по общей части
+  echo_lag: 12
+  detectors:
+    zscore:        {k: 3.0}
+    cross_section: {k: 3.0}
+    cusum:         {k: 0.5, h: 4.0}
+    bocpd:         {hazard: 0.04, threshold: 0.5}
+    pelt:          {penalty: 3.0, recent: 1}
+    binseg:        {penalty: 3.0, recent: 1}
+  calm_windows:                       # месяцы без известных общих событий — база сравнения
+    - ["2019-07-01", "2020-02-01"]
+    - ["2020-09-01", "2021-03-01"]
+  echo_window: ["2021-04-01", "2021-06-01"]
