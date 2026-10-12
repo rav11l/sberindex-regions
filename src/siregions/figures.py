@@ -117,7 +117,9 @@ def gap_figures(o: Path, common: pd.DataFrame, rate: pd.Series, wide_gap: pd.Dat
     h1, l1 = ax.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     ax.legend(h1 + h2, l1 + l2, frameon=False, fontsize=8, loc="upper center", ncol=3)
-    ax.set_ylim(top=float(common.max().max() * 100) * 1.45)
+    ax.set_ylim(top=float(common.max().max() * 100) * 1.62)
+    # легенда стоит сверху, поэтому обеим осям нужен запас: линия ставки живёт на правой
+    ax2.set_ylim(top=float(rate.max()) * 1.30)
     _style(ax)
     fig.tight_layout()
     fig.savefig(fig_dir / "01_common_gap.png", dpi=160)
@@ -273,7 +275,7 @@ def rate_figures(o: Path, irf: pd.DataFrame, rob: pd.DataFrame, win: pd.DataFram
     ax.axhline(0, color=MUTED, lw=0.8)
     ax.set_xticks(x, [short.get(g, g) for g in groups], fontsize=9)
     ax.set_ylabel("% на п. п., неделя решения", color=MUTED, fontsize=8)
-    ax.set_title("На снижение ставки не реагирует никто; бледным — оценки, неотличимые от нуля",
+    ax.set_title("На снижение не реагирует никто; бледным — незначимые оценки",
                  loc="left", fontsize=10, color=INK)
     ax.legend(frameon=False, fontsize=8)
     _style(ax)
