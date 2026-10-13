@@ -304,3 +304,55 @@ def rate_figures(o: Path, irf: pd.DataFrame, rob: pd.DataFrame, win: pd.DataFram
     fig.tight_layout()
     fig.savefig(fig_dir / "03_robustness.png", dpi=160)
     plt.close(fig)
+
+
+def surprise_figures(o: Path, parts: pd.DataFrame, est: pd.DataFrame, mde: float):
+    """Разложение решений на сюрприз и ожидаемую часть: сколько в решении новости
+    и что из этого следует для оценки."""
+    fig_dir = Path(o) / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    p = parts[~parts["нет_котировок"]]
+
+    # 1. Сколько в решении было новостью
+    fig, ax = plt.subplots(figsize=(7.0, 3.4))
+    lim = float(np.ceil(max(p["change"].abs().max(), p["сюрприз"].abs().max())))
+    ax.plot([-lim, lim], [-lim, lim], color=MUTED, lw=0.8, ls="--")
+    hike = p["change"] > 0
+    ax.scatter(p.loc[hike, "change"], p.loc[hike, "сюрприз"], s=26, color=SERIES[0],
+               label="повышения", zorder=3)
+    ax.scatter(p.loc[~hike, "change"], p.loc[~hike, "сюрприз"], s=26, color=SERIES[1],
+               label="снижения и сохранения", zorder=3)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.text(-lim * 0.95, lim * 0.82, "пунктир — решение целиком оказалось новостью",
+            fontsize=7.5, color=MUTED)
+    ax.set_xlabel("изменение ключевой ставки, п. п.", color=MUTED, fontsize=8)
+    ax.set_ylabel("сюрприз: сдвиг кривой ОФЗ, п. п.", color=MUTED, fontsize=8)
+    ax.set_title("Почти все решения рынок ждал: точки лежат у нуля, а не на диагонали",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "01_surprise_vs_change.png", dpi=160)
+    plt.close(fig)
+
+    # 2. Отклик на сюрприз и на ожидаемую часть с интервалами и порогом различимости
+    fig, ax = plt.subplots(figsize=(7.0, 3.2))
+    x = np.arange(len(est))
+    for j, (c, name) in enumerate([("сюрприз", "сюрприз"), ("ожидаемое", "ожидаемая часть")]):
+        off = (j - 0.5) * 0.3
+        ax.errorbar(x + off, est[f"коэф_{c}"], yerr=1.645 * est[f"ст_ош_{c}"], fmt="o",
+                    ms=5, lw=1.4, capsize=3, color=SERIES[j], label=name)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.axhline(-mde, color=MUTED, lw=0.8, ls=":")
+    ax.text(-0.42, -mde, "порог различимости", fontsize=7.5, color=MUTED,
+            ha="left", va="bottom")
+    ax.set_xticks(x, est["вариант"], fontsize=7.5, rotation=10)
+    ax.set_ylabel("% на п. п., неделя решения", color=MUTED, fontsize=8)
+    ax.set_title("Знаки в пользу Холла, но перестановочный тест не держит ни одну оценку",
+                 loc="left", fontsize=10, color=INK)
+    ax.legend(frameon=False, fontsize=8)
+    _style(ax)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "02_surprise_vs_expected.png", dpi=160)
+    plt.close(fig)

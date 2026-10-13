@@ -194,3 +194,36 @@ def test_rate_permutation_p_is_high_for_noise():
     y = pd.Series(np.cumsum(rng.normal(0, 0.01, 150)), index=weeks)   # реакции нет
     out = rate_mod.permutation_p(y, ev, rate_mod.controls(weeks), h=0, n_perm=100, seed=1)
     assert out["p_perm"] > 0.1
+
+
+def test_surprise_decomposition_is_exact():
+    """Сюрприз и ожидаемая часть в сумме дают изменение ставки — тождество, не оценка."""
+    import numpy as np
+    import pandas as pd
+    from siregions import surprise as sp
+
+    idx = pd.to_datetime(["2024-10-23", "2024-10-24", "2024-10-25", "2024-10-28"])
+    curve = pd.DataFrame({"y0_25": [19.0, 19.7, 20.5, 20.6]}, index=idx)
+    dec = pd.DataFrame({"decision_date": pd.to_datetime(["2024-10-25"]),
+                        "kind": ["плановое"], "change": [2.0]})
+    p = sp.decompose(dec, curve)
+    r = p.iloc[0]
+    assert not r["нет_котировок"]
+    assert np.isclose(r["сюрприз"], 20.5 - 19.7)
+    assert np.isclose(r["сюрприз"] + r["ожидаемое"], r["change"])
+
+
+def test_surprise_skips_decisions_without_quotes():
+    """Если торги стояли, решение помечается и в оценку не входит."""
+    import pandas as pd
+    from siregions import surprise as sp
+
+    idx = pd.to_datetime(["2022-02-18", "2022-03-21"])
+    curve = pd.DataFrame({"y0_25": [10.0, 18.0]}, index=idx)
+    dec = pd.DataFrame({"decision_date": pd.to_datetime(["2022-02-28"]),
+                        "kind": ["экстренное"], "change": [10.5]})
+    p = sp.decompose(dec, curve)
+    assert bool(p.iloc[0]["нет_котировок"])
+    weeks = pd.date_range("2022-02-20", periods=6, freq="W")
+    sh = sp.align_parts(p, weeks)
+    assert float(sh.abs().to_numpy().sum()) == 0.0

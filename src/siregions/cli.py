@@ -344,9 +344,91 @@ def cmd_rate(cfg, args):
     return summary
 
 
+def cmd_surprise(cfg, args):
+    """Проверка предсказания Холла: отклик на неожиданную и на ожидаемую часть решения."""
+    from . import rate as rate_mod
+    from . import surprise as sp
+    from . import panelreg as pr
+
+    c = cfg["surprise"]
+    b = rate_mod.build(cfg)
+    curve = sp.load_curve(cfg["curve"])
+    o = out_dir(cfg)
+    ctrl = rate_mod.controls(b["weeks"])
+    groups = c["groups"]
+    main_group = groups[0]
+
+    parts = sp.decompose(b["decisions"], curve, c["tenor"], c["post"])
+    parts.to_csv(o / "decomposition.csv", index=False)
+
+    rows, perm_rows = [], []
+    for v in c["variants"]:
+        keep = rate_mod.KEEPS[v]
+        sh = sp.align_parts(parts, b["weeks"], keep)
+        for g in groups:
+            s = rate_mod.series_for(b["log"], g, "relative")
+            t = sp.local_projection(s, sh, ctrl, c["hmax"], c["lags"])
+            rows.append(t.assign(вариант=v, группа=g))
+        s = rate_mod.series_for(b["log"], main_group, "relative")
+        for term in ["сюрприз", "ожидаемое"]:
+            perm_rows.append({"вариант": v, "группа": main_group,
+                              **sp.permutation_p(s, sh, ctrl, 0, term, c["n_perm"],
+                                                 c["lags"], cfg.get("seed", 0))})
+    est = pd.concat(rows, ignore_index=True)
+    est.to_csv(o / "estimates.csv", index=False)
+    perm = pd.DataFrame(perm_rows)
+    perm.to_csv(o / "permutation.csv", index=False)
+
+    checks = []
+    for tenor in c["tenors_check"]:
+        for post in c["posts_check"]:
+            pp = sp.decompose(b["decisions"], curve, tenor, post)
+            sh = sp.align_parts(pp, b["weeks"], rate_mod.KEEPS["плановые повышения"])
+            s = rate_mod.series_for(b["log"], main_group, "relative")
+            t = sp.local_projection(s, sh, ctrl, 0, c["lags"]).iloc[0]
+            u = pp[(~pp["нет_котировок"]) & (pp["change"] > 0) & (pp["kind"] == "плановое")]
+            checks.append({"срок": tenor, "окно": post,
+                           "коэф_сюрприз": t["коэф_сюрприз"], "p_сюрприз": t["p_сюрприз"],
+                           "коэф_ожидаемое": t["коэф_ожидаемое"], "p_ожидаемое": t["p_ожидаемое"],
+                           "sd_сюрприз": float(u["сюрприз"].std()),
+                           "sd_изменение": float(u["change"].std()),
+                           "корреляция": float(u["сюрприз"].corr(u["change"])),
+                           "mde": float(pr.mde(t["ст_ош_сюрприз"]))})
+    chk = pd.DataFrame(checks)
+    chk.to_csv(o / "measure_checks.csv", index=False)
+
+    head = est[(est["h"] == 0) & (est["группа"] == main_group)]
+    mde = float(chk[(chk["срок"] == c["tenor"]) & (chk["окно"] == c["post"])]["mde"].iloc[0])
+    summary = {
+        "мера": {"источник": "КБД ОФЗ, Банк России", "срок": c["tenor"], "окно": c["post"]},
+        "решений": int(len(parts)),
+        "с изменением": int((parts["change"] != 0).sum()),
+        "без котировок": int(parts["нет_котировок"].sum()),
+        "оценки_h0": head.round(4).to_dict("records"),
+        "перестановки": perm.round(4).to_dict("records"),
+        "проверки_меры": chk.round(3).to_dict("records"),
+        "mde": round(mde, 2),
+    }
+    (o / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    print(json.dumps({k: summary[k] for k in ["решений", "с изменением", "без котировок", "mde"]},
+                     ensure_ascii=False))
+    print("\n--- неделя решения, отклонение от средней активности")
+    print(head[["вариант", "коэф_сюрприз", "p_сюрприз", "коэф_ожидаемое", "p_ожидаемое"]]
+          .round(3).to_string(index=False))
+    print("\n--- перестановочный тест")
+    print(perm[["вариант", "term", "coef", "p_perm", "n_events"]].round(3).to_string(index=False))
+    print("\n--- устойчивость меры сюрприза")
+    print(chk.round(3).to_string(index=False))
+    if c.get("figures", True):
+        from . import figures
+        figures.surprise_figures(o, parts, head.reset_index(drop=True), mde)
+    return summary
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="siregions")
-    ap.add_argument("command", choices=["covid", "forecast", "gap", "novelty", "rate"])
+    ap.add_argument("command", choices=["covid", "forecast", "gap", "novelty", "rate", "surprise"])
     ap.add_argument("--config", default="configs/covid.yaml")
     ap.add_argument("--set", nargs="*", default=[])
     args = ap.parse_args(argv)
@@ -361,6 +443,8 @@ def main(argv=None):
         cmd_novelty(cfg, args)
     elif args.command == "rate":
         cmd_rate(cfg, args)
+    elif args.command == "surprise":
+        cmd_surprise(cfg, args)
     else:
         from .forecast import cmd_forecast
         cmd_forecast(cfg, args)

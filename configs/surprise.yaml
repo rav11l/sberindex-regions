@@ -1,0 +1,22 @@
+# Сюрприз против ожидаемой части: проверка предсказания Холла на тех же 33 решениях.
+# Запуск: python -m siregions.cli surprise --config configs/surprise.yaml
+seed: 42
+output_dir: outputs/surprise
+start: "2021-01-01"
+events: data/events/cbr_decisions.csv
+curve: data/raw/cbr_zcyc_2021_2026.csv
+
+datasets:
+  activity: potrebitelskaya-aktivnost-po-kategoriyam-tovarov-v-razreze-vozrastov
+
+surprise:
+  groups: ["15 - 24 лет", "25 - 34 лет", "35 - 64 лет", "65+ лет"]
+  tenor: y0_25                        # срок кривой ОФЗ, по которому меряется сдвиг
+  post: 0                             # 0 — день решения, 1 — следующий торговый день
+  tenors_check: [y0_25, y0_5, y1]     # проверка устойчивости меры
+  posts_check: [0, 1]
+  variants: ["все решения", "плановые", "плановые повышения", "плановые, без 2022"]
+  hmax: 2                             # дальше горизонта двух недель утверждать нечего
+  lags: 2
+  n_perm: 500
+  figures: true

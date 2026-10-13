@@ -52,5 +52,12 @@
   "bytes": 112311,
   "inner": "residential_real_estate_prices_ru_1791455745474.csv",
   "lines": 14478
+ },
+ "cbr_zcyc_2021_2026.csv": {
+  "sha256": "928cc4799b80f19042f441bb5580e205611d3a2366b977020cd84bc1a4e63b6d",
+  "bytes": 114592,
+  "lines": 1454,
+  "source": "https://www.cbr.ru/hd_base/zcyc_params/",
+  "note": "КБД ОФЗ, дневная, 2021-01-04 .. 2026-10-12; выгружена по кварталам"
  }
 }
