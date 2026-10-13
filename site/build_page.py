@@ -81,6 +81,15 @@ fig_rate = ch.vbars_grouped(
     [("повышения ставки", "rate hikes"), ("снижения ставки", "rate cuts")],
     faded={(0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)})
 
+fig_surprise = ch.vbars_grouped(
+    [("все решения", "all decisions", [-0.71, -0.29]),
+     ("плановые", "scheduled", [-1.49, -0.28]),
+     ("плановые повышения", "scheduled hikes", [-2.40, -0.74]),
+     ("плановые, без 2022", "scheduled, excl. 2022", [-1.81, -0.95])],
+    [ch.ACCENT, ch.S2],
+    [("сюрприз", "surprise"), ("ожидаемая часть", "expected part")],
+    faded={(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)})
+
 # ───────────────────────────── текст ─────────────────────────────
 
 HEAD = f'''<div class="wrap">
@@ -96,13 +105,13 @@ HEAD = f'''<div class="wrap">
   <div class="head">
     <h1 data-ru>Региональные панели СберИндекса</h1>
     <h1 data-en>SberIndex regional panels</h1>
-    <p class="sub" data-ru>Пять исследований об одном приёме: ряд как отклонение от общего фактора панели</p>
-    <p class="sub" data-en>Five studies on one trick: a series as its deviation from the panel's common factor</p>
+    <p class="sub" data-ru>Шесть исследований об одном приёме: ряд как отклонение от общего фактора панели</p>
+    <p class="sub" data-en>Six studies on one trick: a series as its deviation from the panel's common factor</p>
     <p class="byline" data-ru><b>Равиль Ахтямов</b>, кандидат экономических наук<br><span class="m">Digital Economy Lab, Казань · ORCID 0000-0002-0783-8573</span></p>
     <p class="byline" data-en><b>Ravil Akhtyamov</b>, Candidate of Economic Sciences<br><span class="m">Digital Economy Lab, Kazan · ORCID 0000-0002-0783-8573</span></p>
     <div class="stamp">
-      <span class="status" data-ru>прогон · 12.10.2026</span>
-      <span class="status" data-en>run · 12.10.2026</span>
+      <span class="status" data-ru>прогон · 13.10.2026</span>
+      <span class="status" data-en>run · 13.10.2026</span>
       <span data-ru>Данные: <b>СберИндекс</b>, Домклик, Банк России</span>
       <span data-en>Data: <b>SberIndex</b>, Domclick, Bank of Russia</span>
       <span data-ru>Код: <a href="{GITHUB}">GitHub</a> · MIT</span>
@@ -115,8 +124,8 @@ HEAD = f'''<div class="wrap">
 SUMMARY = '''<div class="summary">
   <span class="lbl" data-ru>Коротко</span>
   <span class="lbl" data-en>In brief</span>
-  <p data-ru>Региональная статистика устроена так, что отдельный ряд почти ничего о себе не говорит: истории мало, шума много, а всё заметное в нём — общее для страны. Приём, на котором держатся все пять работ, простой: смотреть не на ряд, а на его отклонение от общего фактора панели. Тогда праздники, инфляция и сам макрошок сокращаются, и остаётся то, чем регион или группа отличается от остальных.</p>
-  <p data-en>Regional statistics are arranged so that a single series says almost nothing about itself: the history is short, the noise is large, and everything visible in it is common to the whole country. The trick behind all five studies is simple: look not at the series but at its deviation from the panel's common factor. Holidays, inflation and the macro shock itself then cancel out, and what remains is how a region or a group differs from the rest.</p>
+  <p data-ru>Региональная статистика устроена так, что отдельный ряд почти ничего о себе не говорит: истории мало, шума много, а всё заметное в нём — общее для страны. Приём, на котором держатся все шесть работ, простой: смотреть не на ряд, а на его отклонение от общего фактора панели. Тогда праздники, инфляция и сам макрошок сокращаются, и остаётся то, чем регион или группа отличается от остальных.</p>
+  <p data-en>Regional statistics are arranged so that a single series says almost nothing about itself: the history is short, the noise is large, and everything visible in it is common to the whole country. The trick behind all six studies is simple: look not at the series but at its deviation from the panel's common factor. Holidays, inflation and the macro shock itself then cancel out, and what remains is how a region or a group differs from the rest.</p>
   <ol>
     <li data-ru><b>Приём решает больше, чем модель.</b> На 117 месяцах цен сделок с жильём контрольная модель без единого обученного параметра обыгрывает Prophet на 32 %, и это уже не вопрос мощности теста: p < 0,0001.</li>
     <li data-en><b>The trick matters more than the model.</b> On 117 months of housing transaction prices, a control model with no fitted parameters beats Prophet by 32 %, and this is no longer a question of statistical power: p &lt; 0.0001.</li>
@@ -239,6 +248,22 @@ S6_BODY = (
     "</ol>"
 )
 
+S6_BODY_SURPRISE = (
+    two("p", """Пятая работа сама назвала своё главное ограничение: по Холлу реагировать должна не вся величина решения, а только та её часть, которая оказалась сюрпризом. Проверка требует ряда рыночных ожиданий. Консенсус-прогнозов в машиночитаемом виде по России нет, но есть то, что лучше опроса: кривая бескупонной доходности ОФЗ. Сдвиг её короткого конца в день заседания и есть сюрприз — так меряют реакцию на решения центральных банков с работы Каттнера 2001 года.""",
+        """The fifth study named its own main limitation: under Hall's hypothesis the response should come not from the size of the decision but only from the part of it that was a surprise. Testing this requires a series of market expectations. Machine-readable consensus forecasts do not exist for Russia, but something better than a survey does: the zero-coupon government bond yield curve. The shift of its short end on the day of the meeting is the surprise — this is how responses to central bank decisions have been measured since Kuttner's 2001 paper.""") +
+    two("p", """Разложение ведёт себя разумно. Экстренное повышение августа 2023-го на 3,5 пункта было новостью на 2,3 пункта; плановое повышение октября 2024-го на два пункта — на 0,83; снижение июля 2025-го на два пункта, которого все ждали, — ни на сколько.""",
+        """The decomposition behaves sensibly. The emergency hike of August 2023 by 3.5 points was news by 2.3 points; the scheduled hike of October 2024 by two points, by 0.83; the cut of July 2025 by two points, which everyone expected, by nothing at all.""") +
+    figure(fig_surprise,
+           "Отклик трат группы 15–24 на неожиданную и на ожидаемую часть решения, % на процентный пункт",
+           "Response of 15–24 spending to the surprise and to the expected part of the decision, % per percentage point",
+           "Все столбцы бледные: ни одна оценка не пережила перестановочный тест. Знаки — те, что предсказывает теория, но различить их и ноль эти данные не позволяют.",
+           "All bars are faded: not one estimate survived the permutation test. The signs are those the theory predicts, but these data cannot tell them apart from zero.") +
+    two("p", """Знаки совпали с предсказанием: отклик сидит на сюрпризе (−2,4 % на процентный пункт у группы 15–24), ожидаемая часть около нуля. Но перестановочный тест этого не держит: случайная расстановка тех же пар даёт такой же коэффициент в четверти случаев. Причина арифметическая. Разброс самого изменения ставки 0,58 пункта, разброс сюрприза — 0,38, и они скоррелированы на 0,70; минимальный обнаружимый эффект при такой вариации 3,7 %, а оценка 2,4 %.""",
+        """The signs matched the prediction: the response sits on the surprise (−2.4 % per percentage point for the 15–24 group), the expected part is near zero. But the permutation test does not hold it: a random arrangement of the same pairs produces the same coefficient in a quarter of the cases. The reason is arithmetic. The standard deviation of the rate change itself is 0.58 points, that of the surprise is 0.38, and they correlate at 0.70; with that much variation the minimum detectable effect is 3.7 %, against an estimate of 2.4 %.""") +
+    two("p", """Поэтому проверка считается непройденной, а не подтверждённой. Вывод пятой работы остаётся прежним — траты падают на 1,3 % на процентный пункт изменения ставки целиком, — и расширить его до «реакция только на неожиданную часть» нельзя. Чтобы довести проверку до конца, нужен ряд свопов на ставку (ROISfix закончился в марте 2022-го) или вдвое-втрое больше заседаний.""",
+        """So the check counts as failed, not as passed. The conclusion of the fifth study stands unchanged — spending falls by 1.3 % per percentage point of the rate change as a whole — and it cannot be widened to «the response comes only from the unexpected part». To finish the test one needs a series of interest rate swaps (ROISfix ended in March 2022) or two to three times as many meetings.""")
+)
+
 LIMITS = ('<div class="limit">' +
     two("span", "Границы", "Limitations", cls="lbl") +
     '<ol class="num">' +
@@ -306,10 +331,12 @@ def build() -> str:
             section("04", "Новизна жилья", "The age of the housing", S4_BODY) +
             section("05", "Кто первым реагирует на ставку",
                     "Who reacts to the key rate first", S5_BODY) +
-            section("06", "Что здесь считается проверкой",
+            section("06", "Сюрприз против ожидаемой части",
+                    "The surprise versus the expected part", S6_BODY_SURPRISE) +
+            section("07", "Что здесь считается проверкой",
                     "What counts as a check here", S6_BODY) +
-            section("07", "Границы", "Limitations", LIMITS) +
-            section("08", "Воспроизведение", "Reproduction", REPRO) +
+            section("08", "Границы", "Limitations", LIMITS) +
+            section("09", "Воспроизведение", "Reproduction", REPRO) +
             FOOT)
     return base + EXTRA_CSS + '<div id="dgl-sr" data-lang="ru">' + body + "</div>" + SCRIPT
 
