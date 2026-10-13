@@ -10,6 +10,9 @@ identifiers:
     value: "10.5281/zenodo.23318082"
     description: "DOI всех версий, всегда ведёт на последнюю"
   - type: doi
+    value: "10.5281/zenodo.23340270"
+    description: "DOI версии v0.2.0"
+  - type: doi
     value: "10.5281/zenodo.23318083"
     description: "DOI версии v0.1.0"
 repository-code: "https://github.com/rav11l/sberindex-regions"
